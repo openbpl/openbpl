@@ -6,15 +6,29 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
+	"github.com/openbpl/openbpl/internal/detect"
 	"github.com/openbpl/openbpl/internal/sources"
 )
+
+var keywords = []string{
+	"coinbase",
+	"metamask",
+	"paypal",
+	"binance",
+	"kraken",
+	"blockchain",
+	"ledger",
+	"trezor",
+}
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	matcher := detect.New(keywords, 1)
 	entries, errs := sources.Stream(ctx, sources.DefaultCertstreamURL)
 
 	for {
@@ -23,7 +37,20 @@ func main() {
 			if !ok {
 				return
 			}
-			fmt.Printf("[%s] index=%d domains=%v\n", entry.Seen.Format("15:04:05"), entry.CertIndex, entry.AllDomains)
+			hits := matcher.Check(entry.AllDomains)
+			for _, h := range hits {
+				kind := "substr"
+				if !h.Exact {
+					kind = fmt.Sprintf("lev=%d", h.Distance)
+				}
+				fmt.Printf("[%s] [%s] keyword=%s domain=%s domains=%s\n",
+					entry.Seen.Format("15:04:05"),
+					kind,
+					h.Keyword,
+					h.Domain,
+					strings.Join(entry.AllDomains, ", "),
+				)
+			}
 		case err := <-errs:
 			if err != nil {
 				log.Fatal(err)
