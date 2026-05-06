@@ -17,17 +17,26 @@ type Job struct {
 	Domain string
 }
 
+// Result is emitted after a successful capture.
+type Result struct {
+	Domain     string
+	Dir        string
+	HTML       string
+	Screenshot []byte
+}
+
 // Worker manages a pool of browser contexts that capture screenshots and DOMs.
 type Worker struct {
 	dir     string
 	jobs    chan Job
+	results chan Result
 	pw      *playwright.Playwright
 	browser playwright.Browser
 	wg      sync.WaitGroup
 }
 
 // Start launches the browser and n concurrent capture goroutines.
-// Captured files are saved to dir as <uuidv7>.png and <uuidv7>.html.
+// Captured files are saved to dir. Completed captures are sent to Results().
 func Start(ctx context.Context, dir string, concurrency int) (*Worker, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, fmt.Errorf("mkdir %s: %w", dir, err)
@@ -49,6 +58,7 @@ func Start(ctx context.Context, dir string, concurrency int) (*Worker, error) {
 	w := &Worker{
 		dir:     dir,
 		jobs:    make(chan Job, 128),
+		results: make(chan Result, 128),
 		pw:      pw,
 		browser: browser,
 	}
@@ -58,7 +68,17 @@ func Start(ctx context.Context, dir string, concurrency int) (*Worker, error) {
 		go w.loop(ctx)
 	}
 
+	go func() {
+		w.wg.Wait()
+		close(w.results)
+	}()
+
 	return w, nil
+}
+
+// Results returns a channel of completed captures for downstream processing.
+func (w *Worker) Results() <-chan Result {
+	return w.results
 }
 
 // Submit queues a domain for capture. Non-blocking; drops if the queue is full.
@@ -138,6 +158,14 @@ func (w *Worker) capture(ctx context.Context, domain string) error {
 	}
 	if err := os.WriteFile(stem+".html", []byte(html), 0o644); err != nil {
 		return fmt.Errorf("write html: %w", err)
+	}
+
+	screenshot, _ := os.ReadFile(stem + ".png")
+	w.results <- Result{
+		Domain:     domain,
+		Dir:        subdir,
+		HTML:       html,
+		Screenshot: screenshot,
 	}
 
 	return nil

@@ -33,6 +33,7 @@ go.work.sum
 
 # Capture data
 data/
+flagged.txt
 
 # Editor/IDE
 # .idea/

@@ -44,8 +44,28 @@ func Stream(ctx context.Context, url string) (<-chan Entry, <-chan error) {
 	go func() {
 		defer close(entries)
 		defer close(errs)
-		if err := stream(ctx, url, entries); err != nil {
-			errs <- err
+
+		backoff := time.Second
+		const maxBackoff = 30 * time.Second
+
+		for {
+			err := stream(ctx, url, entries)
+			if ctx.Err() != nil {
+				return
+			}
+			if err != nil {
+				log.Printf("certstream: %v (reconnecting in %s)", err, backoff)
+			} else {
+				log.Printf("certstream: connection closed (reconnecting in %s)", backoff)
+			}
+
+			select {
+			case <-time.After(backoff):
+			case <-ctx.Done():
+				return
+			}
+
+			backoff = min(backoff*2, maxBackoff)
 		}
 	}()
 

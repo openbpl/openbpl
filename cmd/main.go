@@ -2,15 +2,20 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/openbpl/openbpl/internal/capture"
 	"github.com/openbpl/openbpl/internal/detect"
+	"github.com/openbpl/openbpl/internal/notify"
+	"github.com/openbpl/openbpl/internal/rule"
 	"github.com/openbpl/openbpl/internal/sources"
 	"github.com/openbpl/openbpl/internal/store"
 )
@@ -21,7 +26,6 @@ var keywords = []string{
 	"paypal",
 	"binance",
 	"kraken",
-	"blockchain",
 	"ledger",
 	"trezor",
 }
@@ -36,11 +40,61 @@ func main() {
 	}
 	defer db.Close()
 
+	engine := rule.NewEngine()
+	faviconRule, err := rule.NewFaviconMatch("rules/favicons", 5)
+	if err != nil {
+		log.Printf("favicon rule disabled: %v", err)
+	} else {
+		engine.Register(faviconRule)
+	}
+	engine.Register(&rule.LoginFormDetector{})
+
 	cap, err := capture.Start(ctx, "data", 3)
 	if err != nil {
 		log.Fatalf("start capture: %v", err)
 	}
 	defer cap.Stop()
+
+	flaggedFile, err := os.OpenFile("flagged.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		log.Fatalf("open flagged.txt: %v", err)
+	}
+	defer flaggedFile.Close()
+
+	// Run rules on completed captures in a separate goroutine.
+	go func() {
+		for res := range cap.Results() {
+			ev := rule.Evidence{
+				Domain:     res.Domain,
+				HTML:       res.HTML,
+				Screenshot: res.Screenshot,
+			}
+			labels := engine.Run(ev)
+			if len(labels) > 0 {
+				labelsJSON, _ := json.MarshalIndent(labels, "", "  ")
+				_ = os.WriteFile(filepath.Join(res.Dir, "labels.json"), labelsJSON, 0o644)
+
+				var details []string
+				for _, l := range labels {
+					line := fmt.Sprintf("[%s] domain=%s rule=%s label=%s confidence=%.2f %s dir=%s\n",
+						time.Now().UTC().Format(time.RFC3339),
+						res.Domain, l.Rule, l.Name, l.Confidence, l.Detail, res.Dir)
+					fmt.Fprint(flaggedFile, line)
+					log.Printf("rule [%s] domain=%s label=%s confidence=%.2f %s",
+						l.Rule, res.Domain, l.Name, l.Confidence, l.Detail)
+					details = append(details, l.Detail)
+				}
+
+				screenshot := filepath.Join(res.Dir, res.Domain+".png")
+				notify.Send(
+					"openbpl: "+res.Domain,
+					strings.Join(details, "; "),
+					res.Domain,
+					screenshot,
+				)
+			}
+		}
+	}()
 
 	matcher := detect.New(keywords, 1)
 	entries, errs := sources.Stream(ctx, sources.DefaultCertstreamURL)
