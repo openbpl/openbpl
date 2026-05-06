@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/openbpl/openbpl/internal/capture"
 	"github.com/openbpl/openbpl/internal/detect"
 	"github.com/openbpl/openbpl/internal/sources"
 	"github.com/openbpl/openbpl/internal/store"
@@ -35,6 +36,12 @@ func main() {
 	}
 	defer db.Close()
 
+	cap, err := capture.Start(ctx, "data", 3)
+	if err != nil {
+		log.Fatalf("start capture: %v", err)
+	}
+	defer cap.Stop()
+
 	matcher := detect.New(keywords, 1)
 	entries, errs := sources.Stream(ctx, sources.DefaultCertstreamURL)
 
@@ -45,6 +52,7 @@ func main() {
 				return
 			}
 			hits := matcher.Check(entry.AllDomains)
+			captured := make(map[string]bool)
 			for _, h := range hits {
 				kind := "substr"
 				if !h.Exact {
@@ -65,6 +73,11 @@ func main() {
 					SeenAt:   entry.Seen,
 				}); err != nil {
 					log.Printf("db insert: %v", err)
+				}
+				domain := strings.TrimPrefix(h.Domain, "*.")
+				if !captured[domain] {
+					captured[domain] = true
+					cap.Submit(domain)
 				}
 			}
 		case err := <-errs:
