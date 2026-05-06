@@ -11,6 +11,7 @@ import (
 
 	"github.com/openbpl/openbpl/internal/detect"
 	"github.com/openbpl/openbpl/internal/sources"
+	"github.com/openbpl/openbpl/internal/store"
 )
 
 var keywords = []string{
@@ -27,6 +28,12 @@ var keywords = []string{
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	db, err := store.Open("detections.db")
+	if err != nil {
+		log.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
 
 	matcher := detect.New(keywords, 1)
 	entries, errs := sources.Stream(ctx, sources.DefaultCertstreamURL)
@@ -50,6 +57,15 @@ func main() {
 					h.Domain,
 					strings.Join(entry.AllDomains, ", "),
 				)
+				if err := db.Insert(store.Detection{
+					Domain:   h.Domain,
+					Keyword:  h.Keyword,
+					Kind:     kind,
+					Distance: h.Distance,
+					SeenAt:   entry.Seen,
+				}); err != nil {
+					log.Printf("db insert: %v", err)
+				}
 			}
 		case err := <-errs:
 			if err != nil {
