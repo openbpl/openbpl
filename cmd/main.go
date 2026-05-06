@@ -74,7 +74,6 @@ func main() {
 				labelsJSON, _ := json.MarshalIndent(labels, "", "  ")
 				_ = os.WriteFile(filepath.Join(res.Dir, "labels.json"), labelsJSON, 0o644)
 
-				var details []string
 				for _, l := range labels {
 					line := fmt.Sprintf("[%s] domain=%s rule=%s label=%s confidence=%.2f %s dir=%s\n",
 						time.Now().UTC().Format(time.RFC3339),
@@ -82,16 +81,10 @@ func main() {
 					fmt.Fprint(flaggedFile, line)
 					log.Printf("rule [%s] domain=%s label=%s confidence=%.2f %s",
 						l.Rule, res.Domain, l.Name, l.Confidence, l.Detail)
-					details = append(details, l.Detail)
 				}
 
 				screenshot := filepath.Join(res.Dir, res.Domain+".png")
-				notify.Send(
-					"openbpl: "+res.Domain,
-					strings.Join(details, "; "),
-					res.Domain,
-					screenshot,
-				)
+				notify.Send(res.Domain, labels, screenshot)
 			}
 		}
 	}()
