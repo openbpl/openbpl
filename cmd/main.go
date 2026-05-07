@@ -50,6 +50,7 @@ func main() {
 		blank := slices.Contains(args, "--blank")
 
 		var configContent string
+		var images []project.ImageFile
 		if !blank {
 			result, err := wizard.Run()
 			if err != nil {
@@ -57,9 +58,12 @@ func main() {
 				os.Exit(1)
 			}
 			configContent = wizard.GenerateConfig(result)
+			for _, img := range result.Images {
+				images = append(images, project.ImageFile{Name: img.Name, Data: img.Data})
+			}
 		}
 
-		if err := project.Create(name, configContent); err != nil {
+		if err := project.Create(name, configContent, images); err != nil {
 			fmt.Fprintf(os.Stderr, "openbpl: %v\n", err)
 			os.Exit(1)
 		}

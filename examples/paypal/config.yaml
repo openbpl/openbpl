@@ -2,52 +2,48 @@
 
 # Brand details for phishing detection.
 brand:
-  name: PayPal
-  website: https://www.paypal.com
-  description: Online payment platform for sending and receiving money.
-  industry: fintech
-
-  # Social and official URLs owned by the brand.
-  twitter: https://twitter.com/PayPal
-  github: https://github.com/paypal
+  name: "PayPal"
+  website: "https://paypal.com"
+  description: "PayPal is a digital payments platform that enables online money transfers, payments, and financial services."
+  industry: "fintech"
+  twitter: ""
+  github: ""
 
   # Keywords used for detection.
   keywords:
     included:
       - paypal
-      - pay-pal
       - paypa1
-    excluded:
-      - paypalette
-      - paypalink
+      - paypai
+      # - pp
+      - paypl
+    excluded: []
 
   # Brand images (paths on disk for favicon/logo matching).
   images:
-    - images/paypal.png
+    - images/favicon.png
 
   # Brand colors (hex values).
   colors:
+    - "#012169"
     - "#003087"
     - "#009cde"
-    - "#012169"
+    - "#0070ba"
+    - "#1072eb"
+    - "#ffffff"
 
   # URLs for web assets owned by the brand.
   urls:
     domains:
       - paypal.com
-      - paypal.me
-      - venmo.com
-    social_media:
-      - https://twitter.com/PayPal
-      - https://www.facebook.com/PayPal
-      - https://www.linkedin.com/company/paypal
-      - https://www.instagram.com/paypal
-    app_stores:
-      - https://apps.apple.com/app/paypal/id283646709
-      - https://play.google.com/store/apps/details?id=com.paypal.android.p2pmobile
+      - www.paypal.com
+      - newsroom.paypal-corp.com
+      - developer.paypal.com
+      - www.paypalobjects.com
+    social_media: []
+    app_stores: []
     browser_extensions: []
-    blogs:
-      - https://www.paypal.com/us/webapps/mpp/security/report-problem
+    blogs: []
 
 # Detection source.
 source: certstream

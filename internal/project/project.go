@@ -46,9 +46,16 @@ brand:
 source: certstream
 `
 
+// ImageFile represents an image to write into the project's images/ directory.
+type ImageFile struct {
+	Name string // filename without extension
+	Data []byte // PNG data
+}
+
 // Create scaffolds a new OpenBPL project directory.
 // If configContent is non-empty, it's used instead of the default template.
-func Create(name string, configContent string) error {
+// images are written to the project's images/ directory.
+func Create(name string, configContent string, images []ImageFile) error {
 	if _, err := os.Stat(name); err == nil {
 		return fmt.Errorf("directory %q already exists", name)
 	}
@@ -78,6 +85,14 @@ func Create(name string, configContent string) error {
 	for path, content := range files {
 		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("write %s: %w", path, err)
+		}
+	}
+
+	// Write downloaded images to images/
+	for _, img := range images {
+		dest := filepath.Join(name, "images", img.Name+".png")
+		if err := os.WriteFile(dest, img.Data, 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", dest, err)
 		}
 	}
 

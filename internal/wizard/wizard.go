@@ -7,10 +7,15 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
+
+// ImageDownload holds a downloaded image ready to be written to the project.
+type ImageDownload struct {
+	Name string // filename without extension (e.g., "favicon")
+	Data []byte // PNG-encoded image data
+}
 
 // Result holds the final assembled brand configuration from the wizard.
 type Result struct {
@@ -24,7 +29,7 @@ type Result struct {
 	SocialMedia []string
 	LogoURL     string
 	FaviconURL  string
-	Images      []string // local file paths for downloaded brand images
+	Images      []ImageDownload // downloaded brand images to write into project
 }
 
 // Run executes the interactive setup wizard, prompting the user for their
@@ -116,17 +121,14 @@ func Run() (*Result, error) {
 	result.LogoURL = coalesce(brandData.LogoURL, siteData.LogoURL)
 	result.FaviconURL = siteData.FaviconURL
 
-	// Download favicon image
-	faviconURL := resolveFaviconURL(result.FaviconURL, websiteURL)
-	if faviconURL != "" {
-		fmt.Print("  Downloading favicon image... ")
-		path, err := downloadImage(faviconURL, "favicon")
-		if err != nil {
-			fmt.Printf("warning: %v\n", err)
-		} else {
-			fmt.Println("done")
-			result.Images = append(result.Images, path)
-		}
+	// Download favicon image via Google's favicon API
+	fmt.Print("  Downloading favicon image... ")
+	pngData, err := fetchGoogleFavicon(parsed.Hostname())
+	if err != nil {
+		fmt.Printf("warning: %v\n", err)
+	} else {
+		fmt.Println("done")
+		result.Images = append(result.Images, ImageDownload{Name: "favicon", Data: pngData})
 	}
 
 	// Print summary
@@ -175,7 +177,7 @@ func GenerateConfig(r *Result) string {
 	if len(r.Images) > 0 {
 		sb.WriteString("  images:\n")
 		for _, img := range r.Images {
-			sb.WriteString(fmt.Sprintf("    - %s\n", img))
+			sb.WriteString(fmt.Sprintf("    - images/%s.png\n", img.Name))
 		}
 	} else {
 		sb.WriteString("  images: []\n")
@@ -293,74 +295,24 @@ func extractDomains(primaryDomain string, footerLinks, sitemapURLs []string) []s
 	return out
 }
 
-// resolveFaviconURL converts a potentially relative favicon URL to an absolute URL.
-func resolveFaviconURL(faviconURL, baseURL string) string {
-	if faviconURL == "" {
-		// Fallback: try /favicon.ico
-		parsed, err := url.Parse(baseURL)
-		if err != nil {
-			return ""
-		}
-		return fmt.Sprintf("%s://%s/favicon.ico", parsed.Scheme, parsed.Host)
-	}
-	if strings.HasPrefix(faviconURL, "http://") || strings.HasPrefix(faviconURL, "https://") {
-		return faviconURL
-	}
-	parsed, err := url.Parse(baseURL)
-	if err != nil {
-		return ""
-	}
-	if strings.HasPrefix(faviconURL, "//") {
-		return parsed.Scheme + ":" + faviconURL
-	}
-	if strings.HasPrefix(faviconURL, "/") {
-		return fmt.Sprintf("%s://%s%s", parsed.Scheme, parsed.Host, faviconURL)
-	}
-	return fmt.Sprintf("%s://%s/%s", parsed.Scheme, parsed.Host, faviconURL)
-}
-
-// downloadImage fetches an image from a URL and saves it to the images/ directory.
-func downloadImage(imageURL, name string) (string, error) {
+// fetchGoogleFavicon downloads a favicon PNG from Google's favicon service.
+func fetchGoogleFavicon(domain string) ([]byte, error) {
+	apiURL := fmt.Sprintf("https://www.google.com/s2/favicons?domain=%s&sz=128", url.QueryEscape(domain))
 	client := &http.Client{Timeout: 15 * time.Second}
-	resp, err := client.Get(imageURL)
+	resp, err := client.Get(apiURL)
 	if err != nil {
-		return "", fmt.Errorf("fetch %s: %w", imageURL, err)
+		return nil, fmt.Errorf("fetch favicon: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("fetch %s: status %d", imageURL, resp.StatusCode)
+		return nil, fmt.Errorf("fetch favicon: status %d", resp.StatusCode)
 	}
 
-	// Determine file extension from URL or content type
-	ext := filepath.Ext(imageURL)
-	if ext == "" || len(ext) > 5 {
-		ct := resp.Header.Get("Content-Type")
-		switch {
-		case strings.Contains(ct, "png"):
-			ext = ".png"
-		case strings.Contains(ct, "svg"):
-			ext = ".svg"
-		case strings.Contains(ct, "gif"):
-			ext = ".gif"
-		default:
-			ext = ".ico"
-		}
-	}
-
-	if err := os.MkdirAll("images", 0o755); err != nil {
-		return "", fmt.Errorf("create images directory: %w", err)
-	}
-
-	filename := filepath.Join("images", name+ext)
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 5*1024*1024)) // 5MB limit
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 5*1024*1024))
 	if err != nil {
-		return "", fmt.Errorf("read response: %w", err)
+		return nil, fmt.Errorf("read favicon: %w", err)
 	}
 
-	if err := os.WriteFile(filename, body, 0o644); err != nil {
-		return "", fmt.Errorf("write %s: %w", filename, err)
-	}
-
-	return filename, nil
+	return data, nil
 }
