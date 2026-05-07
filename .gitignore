@@ -38,3 +38,6 @@ flagged.txt
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Binary
+bin/
