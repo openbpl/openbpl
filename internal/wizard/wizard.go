@@ -3,9 +3,13 @@ package wizard
 import (
 	"bufio"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Result holds the final assembled brand configuration from the wizard.
@@ -20,6 +24,7 @@ type Result struct {
 	SocialMedia []string
 	LogoURL     string
 	FaviconURL  string
+	Images      []string // local file paths for downloaded brand images
 }
 
 // Run executes the interactive setup wizard, prompting the user for their
@@ -111,6 +116,19 @@ func Run() (*Result, error) {
 	result.LogoURL = coalesce(brandData.LogoURL, siteData.LogoURL)
 	result.FaviconURL = siteData.FaviconURL
 
+	// Download favicon image
+	faviconURL := resolveFaviconURL(result.FaviconURL, websiteURL)
+	if faviconURL != "" {
+		fmt.Print("  Downloading favicon image... ")
+		path, err := downloadImage(faviconURL, "favicon")
+		if err != nil {
+			fmt.Printf("warning: %v\n", err)
+		} else {
+			fmt.Println("done")
+			result.Images = append(result.Images, path)
+		}
+	}
+
 	// Print summary
 	fmt.Println("\n--- Brand Profile ---")
 	fmt.Printf("  Name:        %s\n", result.Name)
@@ -154,7 +172,14 @@ func GenerateConfig(r *Result) string {
 	sb.WriteString("    excluded: []\n")
 	sb.WriteString("\n")
 	sb.WriteString("  # Brand images (paths on disk for favicon/logo matching).\n")
-	sb.WriteString("  images: []\n")
+	if len(r.Images) > 0 {
+		sb.WriteString("  images:\n")
+		for _, img := range r.Images {
+			sb.WriteString(fmt.Sprintf("    - %s\n", img))
+		}
+	} else {
+		sb.WriteString("  images: []\n")
+	}
 	sb.WriteString("\n")
 	sb.WriteString("  # Brand colors (hex values).\n")
 	sb.WriteString("  colors:\n")
@@ -266,4 +291,72 @@ func extractDomains(primaryDomain string, footerLinks, sitemapURLs []string) []s
 		out = append(out, d)
 	}
 	return out
+}
+
+// resolveFaviconURL converts a potentially relative favicon URL to an absolute URL.
+func resolveFaviconURL(faviconURL, baseURL string) string {
+	if faviconURL == "" {
+		// Fallback: try /favicon.ico
+		parsed, err := url.Parse(baseURL)
+		if err != nil {
+			return ""
+		}
+		return fmt.Sprintf("%s://%s/favicon.ico", parsed.Scheme, parsed.Host)
+	}
+	if strings.HasPrefix(faviconURL, "http://") || strings.HasPrefix(faviconURL, "https://") {
+		return faviconURL
+	}
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return ""
+	}
+	if strings.HasPrefix(faviconURL, "//") {
+		return parsed.Scheme + ":" + faviconURL
+	}
+	if strings.HasPrefix(faviconURL, "/") {
+		return fmt.Sprintf("%s://%s%s", parsed.Scheme, parsed.Host, faviconURL)
+	}
+	return fmt.Sprintf("%s://%s/%s", parsed.Scheme, parsed.Host, faviconURL)
+}
+
+// downloadImage fetches an image from a URL and saves it to the current directory.
+func downloadImage(imageURL, name string) (string, error) {
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Get(imageURL)
+	if err != nil {
+		return "", fmt.Errorf("fetch %s: %w", imageURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("fetch %s: status %d", imageURL, resp.StatusCode)
+	}
+
+	// Determine file extension from URL or content type
+	ext := filepath.Ext(imageURL)
+	if ext == "" || len(ext) > 5 {
+		ct := resp.Header.Get("Content-Type")
+		switch {
+		case strings.Contains(ct, "png"):
+			ext = ".png"
+		case strings.Contains(ct, "svg"):
+			ext = ".svg"
+		case strings.Contains(ct, "gif"):
+			ext = ".gif"
+		default:
+			ext = ".ico"
+		}
+	}
+
+	filename := name + ext
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 5*1024*1024)) // 5MB limit
+	if err != nil {
+		return "", fmt.Errorf("read response: %w", err)
+	}
+
+	if err := os.WriteFile(filename, body, 0o644); err != nil {
+		return "", fmt.Errorf("write %s: %w", filename, err)
+	}
+
+	return filename, nil
 }

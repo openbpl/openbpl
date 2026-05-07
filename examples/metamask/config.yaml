@@ -1,0 +1,66 @@
+# OpenBPL Configuration
+
+# Brand details for phishing detection.
+brand:
+  name: "MetaMask"
+  website: "https://metamask.io"
+  description: "MetaMask is a cryptocurrency wallet that allows users to buy, sell, and manage digital assets like Bitcoin, Ethereum, and Solana."
+  industry: "crypto"
+  twitter: ""
+  github: ""
+
+  # Keywords used for detection.
+  keywords:
+    included:
+      - metamask
+      - meta-mask
+      - metamas
+      - metamsk
+      - mmask
+    excluded: []
+
+  # Brand images (paths on disk for favicon/logo matching).
+  images:
+    - favicon.png
+
+  # Brand colors (hex values).
+  colors:
+    - "#ffffff"
+    - "#f6851b"
+    - "#e8831d"
+    - "#763e1a"
+    - "#037dd6"
+    - "#222222"
+
+  # URLs for web assets owned by the brand.
+  urls:
+    domains:
+      - metamask.io
+      - learn.metamask.io
+      - docs.metamask.io
+      - developer.metamask.io
+      - support.metamask.io
+    social_media:
+      - https://x.com/MetaMask
+      - https://www.youtube.com/@metamask?sub_confirmation=1
+      - https://www.instagram.com/metamask.io/
+      - https://www.linkedin.com/company/metamask/
+      - https://www.youtube.com/playlist?list=PLJ8kQp5OiaEM0ELdLUpuLA9QQ6nNhFfZB
+      - https://github.com/MetaMask
+      - https://x.com/metamaskdev
+      - https://www.youtube.com/@MetaMaskDeveloper?sub_confirmation=1
+      - https://www.tiktok.com/@metamask
+    app_stores: []
+    browser_extensions: []
+    blogs: []
+
+# Detection source.
+source: certstream
+
+# Rules configuration.
+rules:
+  favicon_match:
+    enabled: true
+    threshold: 5
+  login_form:
+    enabled: true
