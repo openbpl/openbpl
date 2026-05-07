@@ -88,12 +88,15 @@ func (m model) viewHeader(w int) string {
 var barChars = []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
 
 func (m model) viewChart(w int) string {
-	// Collect buckets in chronological order.
-	vals := make([]int, chartBuckets)
+	// Collect buckets in chronological order, then append the in-progress
+	// current second so the rightmost bar reacts immediately to new detections
+	// instead of waiting for the next bucket rotation.
+	vals := make([]int, 0, chartBuckets+1)
 	for i := range chartBuckets {
 		idx := (m.bucketIdx + 1 + i) % chartBuckets
-		vals[i] = m.buckets[idx]
+		vals = append(vals, m.buckets[idx])
 	}
+	vals = append(vals, m.bucketAcc)
 
 	// Find max for scaling.
 	maxVal := 1
@@ -109,8 +112,8 @@ func (m model) viewChart(w int) string {
 	if chartW < 10 {
 		chartW = 10
 	}
-	if chartW > chartBuckets {
-		chartW = chartBuckets
+	if chartW > len(vals) {
+		chartW = len(vals)
 	}
 
 	// Take the last chartW values.

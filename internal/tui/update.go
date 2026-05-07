@@ -9,15 +9,26 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-func tickEvery() tea.Cmd {
+// spinnerInterval controls how often the status-line spinner advances.
+// Keep it short (~10 fps) so the spinner reads as "live" without burning CPU.
+const spinnerInterval = 100 * time.Millisecond
+
+func spinnerTick() tea.Cmd {
+	return tea.Tick(spinnerInterval, func(t time.Time) tea.Msg {
+		return spinnerTickMsg(t)
+	})
+}
+
+func bucketTick() tea.Cmd {
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
-		return tickMsg(t)
+		return bucketTickMsg(t)
 	})
 }
 
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
-		tickEvery(),
+		spinnerTick(),
+		bucketTick(),
 		waitForDetection(m.detectionCh),
 		waitForCapture(m.captureCh),
 		waitForRule(m.ruleCh),
@@ -55,13 +66,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.resize()
 		return m, nil
 
-	case tickMsg:
+	case spinnerTickMsg:
 		m.spinnerFrame = (m.spinnerFrame + 1) % len(spinnerFrames)
-		// Rotate bucket.
+		return m, spinnerTick()
+
+	case bucketTickMsg:
 		m.bucketIdx = (m.bucketIdx + 1) % chartBuckets
 		m.buckets[m.bucketIdx] = m.bucketAcc
 		m.bucketAcc = 0
-		return m, tickEvery()
+		return m, bucketTick()
 
 	case DetectionMsg:
 		row := table.Row{

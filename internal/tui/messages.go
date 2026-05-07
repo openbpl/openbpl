@@ -33,5 +33,8 @@ type LogMsg string
 // ErrorMsg carries a fatal error from the pipeline.
 type ErrorMsg struct{ Err error }
 
-// tickMsg is sent every second to advance the spinner and update the chart.
-type tickMsg time.Time
+// spinnerTickMsg is sent on a fast cadence to advance the status-line spinner.
+type spinnerTickMsg time.Time
+
+// bucketTickMsg is sent every second to rotate the rate-chart buckets.
+type bucketTickMsg time.Time

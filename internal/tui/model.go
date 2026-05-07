@@ -28,10 +28,10 @@ type model struct {
 	lastDomain   string // most recent detection for the status line
 
 	// rate chart: detections per second, rolling window
-	buckets    [chartBuckets]int
-	bucketIdx  int
-	bucketAcc  int // accumulator for current second
-	startedAt  time.Time
+	buckets   [chartBuckets]int
+	bucketIdx int
+	bucketAcc int // accumulator for current second
+	startedAt time.Time
 
 	// flagged domains: domain -> capture directory
 	flaggedDirs map[string]string
