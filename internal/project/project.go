@@ -94,9 +94,9 @@ func Create(name string, configContent string) error {
 		return fmt.Errorf("copy rule templates: %w", err)
 	}
 
-	// Write rules/package.json for the Node.js runtime
+	// Write package.json at project root for the Node.js runtime
 	pkgJSON := fmt.Sprintf(`{
-  "name": "%s-rules",
+  "name": "%s",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -105,8 +105,8 @@ func Create(name string, configContent string) error {
   }
 }
 `, name)
-	if err := os.WriteFile(filepath.Join(name, "rules", "package.json"), []byte(pkgJSON), 0o644); err != nil {
-		return fmt.Errorf("write rules/package.json: %w", err)
+	if err := os.WriteFile(filepath.Join(name, "package.json"), []byte(pkgJSON), 0o644); err != nil {
+		return fmt.Errorf("write package.json: %w", err)
 	}
 
 	// Create empty detections.db by touching the file.
@@ -119,11 +119,12 @@ func Create(name string, configContent string) error {
 
 	fmt.Printf("Created project: %s/\n", name)
 	fmt.Printf("  config.yaml\n")
+	fmt.Printf("  package.json\n")
 	fmt.Printf("  data/\n")
 	fmt.Printf("  rules/\n")
 	fmt.Printf("  detections.db\n")
 	fmt.Printf("  flagged.txt\n")
-	fmt.Printf("\nRun 'cd %s/rules && npm install' to install rule dependencies.\n", name)
-	fmt.Printf("Then 'cd %s && openbpl start' to begin monitoring.\n", name)
+	fmt.Printf("\nRun 'cd %s && npm install' to install dependencies.\n", name)
+	fmt.Printf("Then 'openbpl start' to begin monitoring.\n")
 	return nil
 }

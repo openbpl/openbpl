@@ -88,7 +88,7 @@ func newRule(name string) error {
 
 func listRules() error {
 	rulesDir := "rules"
-	runtimePath := filepath.Join(rulesDir, "node_modules", "@openbpl", "sdk", "dist", "runtime.js")
+	runtimePath := filepath.Join("node_modules", "@openbpl", "sdk", "dist", "runtime.js")
 
 	b, err := bridge.Start(runtimePath, rulesDir)
 	if err != nil {
@@ -119,7 +119,7 @@ func listRules() error {
 
 func testRules(ruleName string) error {
 	rulesDir := "rules"
-	runtimePath := filepath.Join(rulesDir, "node_modules", "@openbpl", "sdk", "dist", "runtime.js")
+	runtimePath := filepath.Join("node_modules", "@openbpl", "sdk", "dist", "runtime.js")
 
 	b, err := bridge.Start(runtimePath, rulesDir)
 	if err != nil {

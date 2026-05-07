@@ -46,7 +46,7 @@ func Run() error {
 
 	// Start the Node.js rule sidecar if rules/ directory exists.
 	rulesDir, _ := filepath.Abs("rules")
-	runtimePath := filepath.Join(rulesDir, "node_modules", "@openbpl", "sdk", "dist", "runtime.js")
+	runtimePath := filepath.Join("node_modules", "@openbpl", "sdk", "dist", "runtime.js")
 	nodeBridge, err := bridge.Start(runtimePath, rulesDir)
 	if err != nil {
 		return fmt.Errorf("start rules engine: %w", err)
