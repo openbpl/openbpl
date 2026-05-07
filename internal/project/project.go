@@ -72,6 +72,7 @@ func Create(name string, configContent string) error {
 	files := map[string]string{
 		filepath.Join(name, "config.yaml"): cfg,
 		filepath.Join(name, "flagged.txt"): "",
+		filepath.Join(name, ".gitignore"):  "node_modules/\ndata/\ndetections.db\npackage-lock.json\n",
 	}
 	for path, content := range files {
 		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
@@ -94,15 +95,13 @@ func Create(name string, configContent string) error {
 		return fmt.Errorf("copy rule templates: %w", err)
 	}
 
-	// Write package.json at project root for the Node.js runtime
+	// Write package.json at project root for user dependencies
 	pkgJSON := fmt.Sprintf(`{
   "name": "%s",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "dependencies": {
-    "@openbpl/sdk": "^0.1.0"
-  }
+  "dependencies": {}
 }
 `, name)
 	if err := os.WriteFile(filepath.Join(name, "package.json"), []byte(pkgJSON), 0o644); err != nil {
@@ -124,7 +123,6 @@ func Create(name string, configContent string) error {
 	fmt.Printf("  rules/\n")
 	fmt.Printf("  detections.db\n")
 	fmt.Printf("  flagged.txt\n")
-	fmt.Printf("\nRun 'cd %s && npm install' to install dependencies.\n", name)
-	fmt.Printf("Then 'openbpl start' to begin monitoring.\n")
+	fmt.Printf("\nRun 'cd %s && openbpl start' to begin monitoring.\n", name)
 	return nil
 }

@@ -1,0 +1,66 @@
+# OpenBPL Configuration
+
+# Brand details for phishing detection.
+brand:
+  name: "Ledger"
+  website: "https://ledger.com"
+  description: "Ledger provides hardware wallets and security solutions for managing and protecting cryptocurrency assets."
+  industry: "crypto"
+  twitter: ""
+  github: ""
+
+  # Keywords used for detection.
+  keywords:
+    included:
+      - ledger
+      - ledgerwallet
+      - ledgerlive
+      - l3dger
+      - ledqer
+    excluded: []
+
+  # Brand images (paths on disk for favicon/logo matching).
+  images: []
+
+  # Brand colors (hex values).
+  colors:
+    - "#000000"
+    - "#FFFFFF"
+    - "#FF5C00"
+    - "#D4A0FF"
+    - "#41CCB4"
+
+  # URLs for web assets owned by the brand.
+  urls:
+    domains:
+      - enterprise.ledger.com
+      - donjon.ledger.com
+      - status.ledger.com
+      - ledger.com
+      - shop.ledger.com
+      - developers.ledger.com
+      - support.ledger.com
+      - affiliate.ledger.com
+      - careers.ledger.com
+      - www.ledger.com
+    social_media:
+      - https://www.facebook.com/Ledger/
+      - https://www.instagram.com/ledger/
+      - https://twitter.com/Ledger
+      - https://www.youtube.com/Ledger
+      - https://www.linkedin.com/company/ledgerhq
+      - https://www.tiktok.com/@ledger
+    app_stores: []
+    browser_extensions: []
+    blogs: []
+
+# Detection source.
+source: certstream
+
+# Rules configuration.
+rules:
+  favicon_match:
+    enabled: true
+    threshold: 5
+  login_form:
+    enabled: true

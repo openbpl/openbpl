@@ -21,6 +21,7 @@ import (
 	"github.com/openbpl/openbpl/internal/detect"
 	"github.com/openbpl/openbpl/internal/notify"
 	"github.com/openbpl/openbpl/internal/rule"
+	"github.com/openbpl/openbpl/internal/sdk"
 	"github.com/openbpl/openbpl/internal/sources"
 	"github.com/openbpl/openbpl/internal/store"
 )
@@ -43,6 +44,11 @@ func Run() error {
 		return fmt.Errorf("open db: %w", err)
 	}
 	defer db.Close()
+
+	// Ensure the embedded SDK is extracted into node_modules/.
+	if err := sdk.Ensure("."); err != nil {
+		return fmt.Errorf("extract sdk: %w", err)
+	}
 
 	// Start the Node.js rule sidecar if rules/ directory exists.
 	rulesDir, _ := filepath.Abs("rules")

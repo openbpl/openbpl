@@ -11,6 +11,7 @@ import (
 
 	"github.com/openbpl/openbpl/internal/bridge"
 	"github.com/openbpl/openbpl/internal/config"
+	"github.com/openbpl/openbpl/internal/sdk"
 )
 
 const ruleTemplate = `import { defineRule } from "@openbpl/sdk";
@@ -87,6 +88,9 @@ func newRule(name string) error {
 }
 
 func listRules() error {
+	if err := sdk.Ensure("."); err != nil {
+		return fmt.Errorf("extract sdk: %w", err)
+	}
 	rulesDir := "rules"
 	runtimePath := filepath.Join("node_modules", "@openbpl", "sdk", "dist", "runtime.js")
 
@@ -118,6 +122,9 @@ func listRules() error {
 }
 
 func testRules(ruleName string) error {
+	if err := sdk.Ensure("."); err != nil {
+		return fmt.Errorf("extract sdk: %w", err)
+	}
 	rulesDir := "rules"
 	runtimePath := filepath.Join("node_modules", "@openbpl", "sdk", "dist", "runtime.js")
 
