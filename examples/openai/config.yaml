@@ -1,0 +1,52 @@
+# OpenBPL Configuration
+
+# Brand details for phishing detection.
+brand:
+  name: "OpenAI"
+  website: "https://openai.com"
+  description: "OpenAI is an AI research and deployment company that builds and distributes advanced artificial intelligence models and products."
+  industry: "artificial intelligence"
+  twitter: ""
+  github: ""
+
+  # Keywords used for detection.
+  keywords:
+    included:
+      - openai
+      - chatgpt
+      - gpt
+      - openai.com
+      - dalle
+    excluded: []
+
+  # Brand images (paths on disk for favicon/logo matching).
+  images: []
+
+  # Brand colors (hex values).
+  colors:
+    - "#000000"
+    - "#10A37F"
+    - "#FFFFFF"
+    - "#202123"
+    - "#6E6E80"
+
+  # URLs for web assets owned by the brand.
+  urls:
+    domains:
+      - openai.com
+    social_media:
+      []
+    app_stores: []
+    browser_extensions: []
+    blogs: []
+
+# Detection source.
+source: certstream
+
+# Rules configuration.
+rules:
+  favicon_match:
+    enabled: true
+    threshold: 5
+  login_form:
+    enabled: true

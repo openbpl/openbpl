@@ -50,7 +50,8 @@ rules:
 `
 
 // Create scaffolds a new OpenBPL project directory.
-func Create(name string) error {
+// If configContent is non-empty, it's used instead of the default template.
+func Create(name string, configContent string) error {
 	if _, err := os.Stat(name); err == nil {
 		return fmt.Errorf("directory %q already exists", name)
 	}
@@ -65,8 +66,13 @@ func Create(name string) error {
 		}
 	}
 
+	cfg := defaultConfig
+	if configContent != "" {
+		cfg = configContent
+	}
+
 	files := map[string]string{
-		filepath.Join(name, "config.yaml"):  defaultConfig,
+		filepath.Join(name, "config.yaml"):  cfg,
 		filepath.Join(name, "flagged.txt"):  "",
 	}
 	for path, content := range files {
