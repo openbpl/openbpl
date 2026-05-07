@@ -33,28 +33,18 @@ type FaviconMatch struct {
 	threshold int // max hamming distance to consider a match
 }
 
-// NewFaviconMatch loads all images from iconDir and pre-computes their
+// NewFaviconMatch loads specific image files and pre-computes their
 // perceptual hashes. threshold is the max hamming distance (e.g. 10).
-func NewFaviconMatch(iconDir string, threshold int) (*FaviconMatch, error) {
-	entries, err := os.ReadDir(iconDir)
-	if err != nil {
-		return nil, fmt.Errorf("read icon dir: %w", err)
-	}
-
+func NewFaviconMatch(paths []string, threshold int) (*FaviconMatch, error) {
 	var refs []refIcon
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		path := filepath.Join(iconDir, e.Name())
+	for _, path := range paths {
 		h, err := hashFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("hash %s: %w", path, err)
 		}
-		name := strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
+		name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 		refs = append(refs, refIcon{name: name, hash: h})
 	}
-
 	return &FaviconMatch{refs: refs, threshold: threshold}, nil
 }
 

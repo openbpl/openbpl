@@ -1,0 +1,61 @@
+# OpenBPL Configuration
+
+# Brand details for phishing detection.
+brand:
+  name: PayPal
+  website: https://www.paypal.com
+  description: Online payment platform for sending and receiving money.
+  industry: fintech
+
+  # Social and official URLs owned by the brand.
+  twitter: https://twitter.com/PayPal
+  github: https://github.com/paypal
+
+  # Keywords used for detection.
+  keywords:
+    included:
+      - paypal
+      - pay-pal
+      - paypa1
+    excluded:
+      - paypalette
+      - paypalink
+
+  # Brand images (paths on disk for favicon/logo matching).
+  images:
+    - images/paypal.png
+
+  # Brand colors (hex values).
+  colors:
+    - "#003087"
+    - "#009cde"
+    - "#012169"
+
+  # URLs for web assets owned by the brand.
+  urls:
+    domains:
+      - paypal.com
+      - paypal.me
+      - venmo.com
+    social_media:
+      - https://twitter.com/PayPal
+      - https://www.facebook.com/PayPal
+      - https://www.linkedin.com/company/paypal
+      - https://www.instagram.com/paypal
+    app_stores:
+      - https://apps.apple.com/app/paypal/id283646709
+      - https://play.google.com/store/apps/details?id=com.paypal.android.p2pmobile
+    browser_extensions: []
+    blogs:
+      - https://www.paypal.com/us/webapps/mpp/security/report-problem
+
+# Detection source.
+source: certstream
+
+# Rules configuration.
+rules:
+  favicon_match:
+    enabled: true
+    threshold: 5
+  login_form:
+    enabled: true

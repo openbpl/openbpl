@@ -13,17 +13,22 @@ type Result struct {
 // Matcher holds a set of keywords and checks domains against them.
 type Matcher struct {
 	keywords []string
+	excluded []string
 	maxDist  int
 }
 
 // New creates a Matcher. maxDist is the maximum Levenshtein distance that
 // counts as a fuzzy match (e.g. 2).
-func New(keywords []string, maxDist int) *Matcher {
+func New(keywords []string, excluded []string, maxDist int) *Matcher {
 	lower := make([]string, len(keywords))
 	for i, k := range keywords {
 		lower[i] = strings.ToLower(k)
 	}
-	return &Matcher{keywords: lower, maxDist: maxDist}
+	lowerExcl := make([]string, len(excluded))
+	for i, k := range excluded {
+		lowerExcl[i] = strings.ToLower(k)
+	}
+	return &Matcher{keywords: lower, excluded: lowerExcl, maxDist: maxDist}
 }
 
 // Check tests every domain against the keyword list and returns all hits.
@@ -31,6 +36,9 @@ func (m *Matcher) Check(domains []string) []Result {
 	var results []Result
 	for _, domain := range domains {
 		domain = strings.ToLower(domain)
+		if m.isExcluded(domain) {
+			continue
+		}
 		for _, kw := range m.keywords {
 			if r, ok := m.check(domain, kw); ok {
 				results = append(results, r)
@@ -38,6 +46,16 @@ func (m *Matcher) Check(domains []string) []Result {
 		}
 	}
 	return results
+}
+
+// isExcluded returns true if the domain contains any excluded keyword.
+func (m *Matcher) isExcluded(domain string) bool {
+	for _, ex := range m.excluded {
+		if strings.Contains(domain, ex) {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Matcher) check(domain, keyword string) (Result, bool) {

@@ -15,6 +15,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/openbpl/openbpl/internal/capture"
+	"github.com/openbpl/openbpl/internal/config"
 	"github.com/openbpl/openbpl/internal/detect"
 	"github.com/openbpl/openbpl/internal/notify"
 	"github.com/openbpl/openbpl/internal/rule"
@@ -22,21 +23,16 @@ import (
 	"github.com/openbpl/openbpl/internal/store"
 )
 
-var keywords = []string{
-	"coinbase",
-	"metamask",
-	"paypal",
-	"binance",
-	"kraken",
-	"ledger",
-	"trezor",
-}
-
 // capturesRoot is the on-disk directory where per-domain capture subdirs live.
 const capturesRoot = "data"
 
 // Run initialises the pipeline and launches the TUI.
 func Run() error {
+	cfg, err := config.Load("config.yaml")
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -47,11 +43,13 @@ func Run() error {
 	defer db.Close()
 
 	engine := rule.NewEngine()
-	faviconRule, err := rule.NewFaviconMatch("rules/favicons", 5)
-	if err != nil {
-		log.Printf("favicon rule disabled: %v", err)
-	} else {
-		engine.Register(faviconRule)
+	if len(cfg.Brand.Images) > 0 {
+		faviconRule, err := rule.NewFaviconMatch(cfg.Brand.Images, 5)
+		if err != nil {
+			log.Printf("favicon rule disabled: %v", err)
+		} else {
+			engine.Register(faviconRule)
+		}
 	}
 	engine.Register(&rule.LoginFormDetector{})
 
@@ -112,7 +110,7 @@ func Run() error {
 	}()
 
 	// --- CertStream detection goroutine ---
-	matcher := detect.New(keywords, 1)
+	matcher := detect.New(cfg.Brand.Keywords.Included, cfg.Brand.Keywords.Excluded, 1)
 	entries, streamErrs := sources.Stream(ctx, sources.DefaultCertstreamURL)
 
 	go func() {

@@ -7,15 +7,35 @@ import (
 )
 
 const defaultConfig = `# OpenBPL Configuration
-# Keywords to monitor in certificate transparency logs.
-keywords:
-  - coinbase
-  - metamask
-  - paypal
-  - binance
-  - kraken
-  - ledger
-  - trezor
+
+# Brand details for phishing detection.
+brand:
+  name: ""
+  website: ""
+  description: ""
+  industry: ""
+  twitter: ""
+  github: ""
+
+  # Keywords used for detection.
+  keywords:
+    included:
+      - example
+    excluded: []
+
+  # Brand images (paths on disk for favicon/logo matching).
+  images: []
+
+  # Brand colors (hex values).
+  colors: []
+
+  # URLs for web assets owned by the brand.
+  urls:
+    domains: []
+    social_media: []
+    app_stores: []
+    browser_extensions: []
+    blogs: []
 
 # Detection source.
 source: certstream
