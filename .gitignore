@@ -41,3 +41,6 @@ flagged.txt
 
 # Binary
 bin/
+
+# MacOS
+.DS_Store

@@ -1,0 +1,51 @@
+# OpenBPL Configuration
+
+# Brand details for phishing detection.
+brand:
+  name: "Coinbase"
+  website: "https://coinbase.com"
+  description: "Coinbase is a cryptocurrency exchange platform that allows users to buy, sell, store, and trade digital currencies."
+  industry: "fintech"
+  twitter: ""
+  github: ""
+
+  # Keywords used for detection.
+  keywords:
+    included:
+      - coinbase
+      - c0inbase
+      - coinbse
+      - coinbasecom
+      # - cb
+    excluded: []
+
+  # Brand images (paths on disk for favicon/logo matching).
+  images: []
+
+  # Brand colors (hex values).
+  colors:
+    - "#0052FF"
+    - "#1652F0"
+    - "#050F19"
+    - "#FFFFFF"
+    - "#0A0B0D"
+
+  # URLs for web assets owned by the brand.
+  urls:
+    domains:
+      - coinbase.com
+    social_media: []
+    app_stores: []
+    browser_extensions: []
+    blogs: []
+
+# Detection source.
+source: certstream
+
+# Rules configuration.
+rules:
+  favicon_match:
+    enabled: true
+    threshold: 5
+  login_form:
+    enabled: true

@@ -1,0 +1,67 @@
+# OpenBPL Configuration
+
+# Brand details for phishing detection.
+brand:
+  name: "Roblox"
+  website: "https://roblox.com"
+  description: "Roblox is an online platform that lets users create, share, and play immersive experiences in a virtual universe."
+  industry: "gaming"
+  twitter: ""
+  github: ""
+
+  # Keywords used for detection.
+  keywords:
+    included:
+      - roblox
+      - robux
+      - rblx
+      - r0blox
+      - roblx
+    excluded: []
+
+  # Brand images (paths on disk for favicon/logo matching).
+  images: []
+
+  # Brand colors (hex values).
+  colors:
+    - "#E2231A"
+    - "#393B3D"
+    - "#FFFFFF"
+    - "#00A2FF"
+    - "#1A1A1A"
+
+  # URLs for web assets owned by the brand.
+  urls:
+    domains:
+      - roblox.com
+      - www.roblox.com
+    social_media:
+      - https://www.roblox.com/login
+      - https://www.roblox.com/info/terms
+      - https://www.roblox.com/info/privacy
+      - https://www.xbox.com/en-us/games/store/roblox/bq1tn1t79v9k
+      - https://www.roblox.com/info/about-us?locale=en_us
+      - https://www.roblox.com/info/jobs?locale=en_us
+      - https://www.roblox.com/info/blog?locale=en_us
+      - https://www.roblox.com/info/parents?locale=en_us
+      - https://www.roblox.com/giftcards?locale=en_us
+      - https://www.roblox.com/info/help?locale=en_us
+      - https://www.roblox.com/info/terms?locale=en_us
+      - https://www.roblox.com/info/accessibility?locale=en_us
+      - https://www.roblox.com/info/privacy?locale=en_us
+      - https://www.roblox.com/my/account#!/privacy?locale=en_us
+      - https://www.roblox.com/sitemap?locale=en_us
+    app_stores: []
+    browser_extensions: []
+    blogs: []
+
+# Detection source.
+source: certstream
+
+# Rules configuration.
+rules:
+  favicon_match:
+    enabled: true
+    threshold: 5
+  login_form:
+    enabled: true
