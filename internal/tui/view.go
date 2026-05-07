@@ -77,7 +77,6 @@ func (m model) viewHeader(w int) string {
 	}
 
 	return lipgloss.NewStyle().
-		Background(gray900).
 		Width(w).
 		Render(line + strings.Repeat(" ", padW))
 }
@@ -194,7 +193,6 @@ func (m model) viewStatus(w int) string {
 	}
 
 	return lipgloss.NewStyle().
-		Background(gray900).
 		Width(w).
 		Render(left + filterBadge + strings.Repeat(" ", padW) + help)
 }
