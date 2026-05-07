@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -14,6 +15,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/openbpl/openbpl/internal/bridge"
 	"github.com/openbpl/openbpl/internal/capture"
 	"github.com/openbpl/openbpl/internal/config"
 	"github.com/openbpl/openbpl/internal/detect"
@@ -42,16 +44,14 @@ func Run() error {
 	}
 	defer db.Close()
 
-	engine := rule.NewEngine()
-	if len(cfg.Brand.Images) > 0 {
-		faviconRule, err := rule.NewFaviconMatch(cfg.Brand.Images, 5)
-		if err != nil {
-			log.Printf("favicon rule disabled: %v", err)
-		} else {
-			engine.Register(faviconRule)
-		}
+	// Start the Node.js rule sidecar if rules/ directory exists.
+	rulesDir, _ := filepath.Abs("rules")
+	runtimePath := filepath.Join(rulesDir, "node_modules", "@openbpl", "sdk", "dist", "runtime.js")
+	nodeBridge, err := bridge.Start(runtimePath, rulesDir)
+	if err != nil {
+		return fmt.Errorf("start rules engine: %w", err)
 	}
-	engine.Register(&rule.LoginFormDetector{})
+	defer nodeBridge.Stop()
 
 	cap, err := capture.Start(ctx, capturesRoot, 3)
 	if err != nil {
@@ -81,13 +81,54 @@ func Run() error {
 			default:
 			}
 
-			ev := rule.Evidence{
-				Domain:     res.Domain,
-				HTML:       res.HTML,
-				Screenshot: res.Screenshot,
+			screenshotPath := filepath.Join(res.Dir, res.Domain+".png")
+			params := bridge.EvaluateParams{
+				Evidence: bridge.Evidence{
+					Domain:         res.Domain,
+					HTML:           res.HTML,
+					Title:          extractTitle(res.HTML),
+					ScreenshotPath: screenshotPath,
+					Screenshot:     base64.StdEncoding.EncodeToString(res.Screenshot),
+				},
+				Brand: bridge.Brand{
+					Name:        cfg.Brand.Name,
+					Website:     cfg.Brand.Website,
+					Description: cfg.Brand.Description,
+					Industry:    cfg.Brand.Industry,
+					Keywords: bridge.Keywords{
+						Included: cfg.Brand.Keywords.Included,
+						Excluded: cfg.Brand.Keywords.Excluded,
+					},
+					Images: cfg.Brand.Images,
+					Colors: cfg.Brand.Colors,
+					URLs: bridge.URLs{
+						Domains:           cfg.Brand.URLs.Domains,
+						SocialMedia:       cfg.Brand.URLs.SocialMedia,
+						AppStores:         cfg.Brand.URLs.AppStores,
+						BrowserExtensions: cfg.Brand.URLs.BrowserExtensions,
+						Blogs:             cfg.Brand.URLs.Blogs,
+					},
+				},
 			}
-			labels := engine.Run(ev)
-			if len(labels) > 0 {
+
+			bridgeLabels, err := nodeBridge.Evaluate(params)
+			if err != nil {
+				log.Printf("rule evaluate: %v", err)
+				continue
+			}
+
+			if len(bridgeLabels) > 0 {
+				// Convert bridge labels to rule.Label for compatibility
+				labels := make([]rule.Label, len(bridgeLabels))
+				for i, bl := range bridgeLabels {
+					labels[i] = rule.Label{
+						Rule:       bl.Name,
+						Name:       bl.Name,
+						Confidence: bl.Confidence,
+						Detail:     bl.Detail,
+					}
+				}
+
 				labelsJSON, _ := json.MarshalIndent(labels, "", "  ")
 				_ = os.WriteFile(filepath.Join(res.Dir, "labels.json"), labelsJSON, 0o644)
 
@@ -184,4 +225,23 @@ func Run() error {
 
 	stop()
 	return nil
+}
+
+// extractTitle returns the content of the <title> tag from HTML.
+func extractTitle(html string) string {
+	lower := strings.ToLower(html)
+	start := strings.Index(lower, "<title")
+	if start == -1 {
+		return ""
+	}
+	start = strings.Index(lower[start:], ">")
+	if start == -1 {
+		return ""
+	}
+	start += strings.Index(lower, "<title") + 1
+	end := strings.Index(lower[start:], "</title>")
+	if end == -1 {
+		return ""
+	}
+	return strings.TrimSpace(html[start : start+end])
 }

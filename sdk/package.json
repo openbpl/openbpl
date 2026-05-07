@@ -1,0 +1,34 @@
+{
+  "name": "@openbpl/sdk",
+  "version": "0.1.0",
+  "description": "OpenBPL rule authoring SDK",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "devDependencies": {
+    "@types/node": "^25.6.1",
+    "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  },
+  "license": "MIT"
+}

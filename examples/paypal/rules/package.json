@@ -1,0 +1,9 @@
+{
+  "name": "paypal-rules",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@openbpl/sdk": "file:../../../sdk"
+  }
+}

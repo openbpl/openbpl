@@ -1,10 +1,15 @@
 package project
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
+
+//go:embed templates/rules/*
+var templateRules embed.FS
 
 const defaultConfig = `# OpenBPL Configuration
 
@@ -39,14 +44,6 @@ brand:
 
 # Detection source.
 source: certstream
-
-# Rules configuration.
-rules:
-  favicon_match:
-    enabled: true
-    threshold: 5
-  login_form:
-    enabled: true
 `
 
 // Create scaffolds a new OpenBPL project directory.
@@ -59,6 +56,7 @@ func Create(name string, configContent string) error {
 	dirs := []string{
 		name,
 		filepath.Join(name, "data"),
+		filepath.Join(name, "rules"),
 	}
 	for _, d := range dirs {
 		if err := os.MkdirAll(d, 0o755); err != nil {
@@ -72,13 +70,43 @@ func Create(name string, configContent string) error {
 	}
 
 	files := map[string]string{
-		filepath.Join(name, "config.yaml"):  cfg,
-		filepath.Join(name, "flagged.txt"):  "",
+		filepath.Join(name, "config.yaml"): cfg,
+		filepath.Join(name, "flagged.txt"): "",
 	}
 	for path, content := range files {
 		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("write %s: %w", path, err)
 		}
+	}
+
+	// Copy default rule templates into rules/
+	if err := fs.WalkDir(templateRules, "templates/rules", func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		data, err := templateRules.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		dest := filepath.Join(name, "rules", d.Name())
+		return os.WriteFile(dest, data, 0o644)
+	}); err != nil {
+		return fmt.Errorf("copy rule templates: %w", err)
+	}
+
+	// Write rules/package.json for the Node.js runtime
+	pkgJSON := fmt.Sprintf(`{
+  "name": "%s-rules",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@openbpl/sdk": "^0.1.0"
+  }
+}
+`, name)
+	if err := os.WriteFile(filepath.Join(name, "rules", "package.json"), []byte(pkgJSON), 0o644); err != nil {
+		return fmt.Errorf("write rules/package.json: %w", err)
 	}
 
 	// Create empty detections.db by touching the file.
@@ -90,10 +118,12 @@ func Create(name string, configContent string) error {
 	f.Close()
 
 	fmt.Printf("Created project: %s/\n", name)
-	fmt.Printf("  data/\n")
 	fmt.Printf("  config.yaml\n")
+	fmt.Printf("  data/\n")
+	fmt.Printf("  rules/\n")
 	fmt.Printf("  detections.db\n")
 	fmt.Printf("  flagged.txt\n")
-	fmt.Printf("\nRun 'cd %s && openbpl start' to begin monitoring.\n", name)
+	fmt.Printf("\nRun 'cd %s/rules && npm install' to install rule dependencies.\n", name)
+	fmt.Printf("Then 'cd %s && openbpl start' to begin monitoring.\n", name)
 	return nil
 }
