@@ -3,6 +3,7 @@ package tui
 import (
 	"net/url"
 	"os/exec"
+	"strings"
 	"time"
 
 	"charm.land/bubbles/v2/table"
@@ -45,17 +46,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "o":
 			if domain, ok := m.selectedDomain(); ok {
-				if _, flagged := m.flaggedDirs[domain]; flagged {
-					browserlingURL := "https://www.browserling.com/browse/win10/chrome131/https%3A%2F%2F" + url.PathEscape(domain)
-					_ = exec.Command("open", browserlingURL).Start()
-				}
+				// Strip wildcard prefix from CT entries so the URL is valid.
+				host := strings.TrimPrefix(domain, "*.")
+				browserlingURL := "https://www.browserling.com/browse/win10/chrome131/https%3A%2F%2F" + url.PathEscape(host)
+				_ = exec.Command("open", browserlingURL).Start()
 			}
 			return m, nil
 		case "f":
+			target := m.capturesRoot
 			if domain, ok := m.selectedDomain(); ok {
-				if dir, flagged := m.flaggedDirs[domain]; flagged {
-					_ = exec.Command("open", dir).Start()
+				host := strings.TrimPrefix(domain, "*.")
+				if dir, captured := m.captureDirs[host]; captured && dir != "" {
+					target = dir
 				}
+			}
+			if target != "" {
+				_ = exec.Command("open", target).Start()
 			}
 			return m, nil
 		}
@@ -95,12 +101,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case CaptureMsg:
 		m.captures++
+		if msg.Result.Dir != "" {
+			m.captureDirs[msg.Result.Domain] = msg.Result.Dir
+		}
 		return m, waitForCapture(m.captureCh)
 
 	case RuleMsg:
 		m.flagged += len(msg.Labels)
 		if msg.Dir != "" {
-			m.flaggedDirs[msg.Domain] = msg.Dir
+			m.captureDirs[msg.Domain] = msg.Dir
 		}
 		return m, waitForRule(m.ruleCh)
 

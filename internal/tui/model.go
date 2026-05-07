@@ -33,8 +33,14 @@ type model struct {
 	bucketAcc int // accumulator for current second
 	startedAt time.Time
 
-	// flagged domains: domain -> capture directory
-	flaggedDirs map[string]string
+	// captured domains: domain -> capture directory.
+	// Populated for every successful capture, not only flagged ones, so the
+	// "open in finder" key works on any row whose capture has completed.
+	captureDirs map[string]string
+
+	// capturesRoot is the parent directory that holds per-domain capture
+	// subdirs; used as a fallback when a specific row hasn't been captured yet.
+	capturesRoot string
 
 	// channels
 	detectionCh <-chan DetectionMsg
@@ -52,6 +58,7 @@ func newModel(
 	capCh <-chan CaptureMsg,
 	ruleCh <-chan RuleMsg,
 	errCh <-chan error,
+	capturesRoot string,
 ) model {
 	columns := []table.Column{
 		{Title: "TIME", Width: 10},
@@ -88,13 +95,14 @@ func newModel(
 	)
 
 	return model{
-		table:       t,
-		startedAt:   time.Now(),
-		flaggedDirs: make(map[string]string),
-		detectionCh: detCh,
-		captureCh:   capCh,
-		ruleCh:      ruleCh,
-		errCh:       errCh,
+		table:        t,
+		startedAt:    time.Now(),
+		captureDirs:  make(map[string]string),
+		capturesRoot: capturesRoot,
+		detectionCh:  detCh,
+		captureCh:    capCh,
+		ruleCh:       ruleCh,
+		errCh:        errCh,
 	}
 }
 

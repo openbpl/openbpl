@@ -32,6 +32,9 @@ var keywords = []string{
 	"trezor",
 }
 
+// capturesRoot is the on-disk directory where per-domain capture subdirs live.
+const capturesRoot = "data"
+
 // Run initialises the pipeline and launches the TUI.
 func Run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -52,7 +55,7 @@ func Run() error {
 	}
 	engine.Register(&rule.LoginFormDetector{})
 
-	cap, err := capture.Start(ctx, "data", 3)
+	cap, err := capture.Start(ctx, capturesRoot, 3)
 	if err != nil {
 		return fmt.Errorf("start capture: %w", err)
 	}
@@ -166,7 +169,7 @@ func Run() error {
 	}()
 
 	// --- Launch the TUI ---
-	m := newModel(detCh, captureCh, ruleCh, errCh)
+	m := newModel(detCh, captureCh, ruleCh, errCh, capturesRoot)
 	p := tea.NewProgram(m)
 
 	// Redirect all log.* output into the TUI log panel.
