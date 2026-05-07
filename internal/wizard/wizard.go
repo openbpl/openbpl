@@ -319,7 +319,7 @@ func resolveFaviconURL(faviconURL, baseURL string) string {
 	return fmt.Sprintf("%s://%s/%s", parsed.Scheme, parsed.Host, faviconURL)
 }
 
-// downloadImage fetches an image from a URL and saves it to the current directory.
+// downloadImage fetches an image from a URL and saves it to the images/ directory.
 func downloadImage(imageURL, name string) (string, error) {
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Get(imageURL)
@@ -348,7 +348,11 @@ func downloadImage(imageURL, name string) (string, error) {
 		}
 	}
 
-	filename := name + ext
+	if err := os.MkdirAll("images", 0o755); err != nil {
+		return "", fmt.Errorf("create images directory: %w", err)
+	}
+
+	filename := filepath.Join("images", name+ext)
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 5*1024*1024)) // 5MB limit
 	if err != nil {
 		return "", fmt.Errorf("read response: %w", err)

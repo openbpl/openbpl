@@ -56,6 +56,7 @@ func Create(name string, configContent string) error {
 	dirs := []string{
 		name,
 		filepath.Join(name, "data"),
+		filepath.Join(name, "images"),
 		filepath.Join(name, "rules"),
 	}
 	for _, d := range dirs {
