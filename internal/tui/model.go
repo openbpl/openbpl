@@ -73,8 +73,10 @@ func newModel(
 		Padding(0, 1)
 	s.Selected = lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("#111827")).  // gray-900
-		Background(lipgloss.Color("#F97316")). // orange-500
+		Foreground(lipgloss.Color("#F97316")). // orange-500
+		BorderLeft(true).
+		BorderStyle(lipgloss.Border{Left: "→"}).
+		BorderForeground(lipgloss.Color("#F97316")).
 		Padding(0, 1)
 
 	t := table.New(
