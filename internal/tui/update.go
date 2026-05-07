@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"net/url"
+	"os/exec"
 	"time"
 
 	"charm.land/bubbles/v2/table"
@@ -30,6 +32,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			m.quitting = true
 			return m, tea.Quit
+		case "o":
+			if domain, ok := m.selectedDomain(); ok {
+				if _, flagged := m.flaggedDirs[domain]; flagged {
+					browserlingURL := "https://www.browserling.com/browse/win10/chrome131/https%3A%2F%2F" + url.PathEscape(domain)
+					_ = exec.Command("open", browserlingURL).Start()
+				}
+			}
+			return m, nil
+		case "f":
+			if domain, ok := m.selectedDomain(); ok {
+				if dir, flagged := m.flaggedDirs[domain]; flagged {
+					_ = exec.Command("open", dir).Start()
+				}
+			}
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
@@ -69,6 +86,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case RuleMsg:
 		m.flagged += len(msg.Labels)
+		if msg.Dir != "" {
+			m.flaggedDirs[msg.Domain] = msg.Dir
+		}
 		return m, waitForRule(m.ruleCh)
 
 	case LogMsg:

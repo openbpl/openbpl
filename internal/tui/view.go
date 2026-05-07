@@ -176,7 +176,7 @@ func (m model) viewStatus(w int) string {
 
 	help := lipgloss.NewStyle().
 		Foreground(gray700).
-		Render("↑↓ scroll  q quit")
+		Render("↑↓ scroll  o browser  f finder  q quit")
 
 	padW := w - lipgloss.Width(left) - lipgloss.Width(help)
 	if padW < 1 {

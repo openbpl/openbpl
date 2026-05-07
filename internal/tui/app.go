@@ -101,7 +101,7 @@ func Run() error {
 				notify.Send(res.Domain, labels, screenshot)
 
 				select {
-				case ruleCh <- RuleMsg{Domain: res.Domain, Labels: labels}:
+				case ruleCh <- RuleMsg{Domain: res.Domain, Dir: res.Dir, Labels: labels}:
 				default:
 				}
 			}

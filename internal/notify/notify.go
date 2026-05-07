@@ -3,7 +3,6 @@ package notify
 import (
 	"fmt"
 	"log"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,8 +12,8 @@ import (
 	"github.com/openbpl/openbpl/internal/rule"
 )
 
-// Send posts a macOS banner notification, opens Finder + Browserling,
-// then writes draft abuse report emails into the capture directory.
+// Send posts a macOS banner notification and writes draft abuse report
+// emails into the capture directory.
 func Send(domain string, labels []rule.Label, screenshotPath string) {
 	absPath, _ := filepath.Abs(screenshotPath)
 	dir := filepath.Dir(absPath)
@@ -31,11 +30,6 @@ func Send(domain string, labels []rule.Label, screenshotPath string) {
 		appleQuote("openbpl: "+domain),
 	)
 	_ = exec.Command("osascript", "-e", bannerScript).Run()
-
-	// Open capture folder + Browserling immediately.
-	_ = exec.Command("open", dir).Run()
-	browserlingURL := "https://www.browserling.com/browse/win10/chrome131/https%3A%2F%2F" + url.PathEscape(domain)
-	_ = exec.Command("open", browserlingURL).Run()
 
 	// Look up abuse contacts and write draft emails in the background.
 	go writeDraftEmails(domain, labels, dir)

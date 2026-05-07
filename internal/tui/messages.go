@@ -23,6 +23,7 @@ type CaptureMsg struct {
 // RuleMsg is sent when the rule engine produces labels for a captured domain.
 type RuleMsg struct {
 	Domain string
+	Dir    string
 	Labels []rule.Label
 }
 

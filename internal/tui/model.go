@@ -33,6 +33,9 @@ type model struct {
 	bucketAcc  int // accumulator for current second
 	startedAt  time.Time
 
+	// flagged domains: domain -> capture directory
+	flaggedDirs map[string]string
+
 	// channels
 	detectionCh <-chan DetectionMsg
 	captureCh   <-chan CaptureMsg
@@ -85,9 +88,19 @@ func newModel(
 	return model{
 		table:       t,
 		startedAt:   time.Now(),
+		flaggedDirs: make(map[string]string),
 		detectionCh: detCh,
 		captureCh:   capCh,
 		ruleCh:      ruleCh,
 		errCh:       errCh,
 	}
+}
+
+// selectedDomain returns the domain from the currently selected table row.
+func (m model) selectedDomain() (string, bool) {
+	row := m.table.SelectedRow()
+	if len(row) < 4 {
+		return "", false
+	}
+	return row[3], true
 }
