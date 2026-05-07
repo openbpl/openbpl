@@ -42,6 +42,13 @@ type model struct {
 	// subdirs; used as a fallback when a specific row hasn't been captured yet.
 	capturesRoot string
 
+	// flaggedSet tracks domains that have been flagged by rules, so new
+	// detections of already-flagged domains show the badge immediately.
+	flaggedSet map[string]bool
+
+	// filter state
+	showOnlyFlagged bool
+
 	// channels
 	detectionCh <-chan DetectionMsg
 	captureCh   <-chan CaptureMsg
@@ -64,7 +71,8 @@ func newModel(
 		{Title: "TIME", Width: 10},
 		{Title: "KIND", Width: 8},
 		{Title: "KEYWORD", Width: 14},
-		{Title: "DOMAIN", Width: 48},
+		{Title: "FLAG", Width: 4},
+		{Title: "DOMAIN", Width: 44},
 	}
 
 	s := table.DefaultStyles()
@@ -98,6 +106,7 @@ func newModel(
 		table:        t,
 		startedAt:    time.Now(),
 		captureDirs:  make(map[string]string),
+		flaggedSet:   make(map[string]bool),
 		capturesRoot: capturesRoot,
 		detectionCh:  detCh,
 		captureCh:    capCh,
@@ -109,8 +118,8 @@ func newModel(
 // selectedDomain returns the domain from the currently selected table row.
 func (m model) selectedDomain() (string, bool) {
 	row := m.table.SelectedRow()
-	if len(row) < 4 {
+	if len(row) < 5 {
 		return "", false
 	}
-	return row[3], true
+	return row[4], true
 }

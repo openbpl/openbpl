@@ -177,11 +177,18 @@ func (m model) viewStatus(w int) string {
 
 	left := spinner + " " + activity
 
+	var filterBadge string
+	if m.showOnlyFlagged {
+		filterBadge = lipgloss.NewStyle().
+			Foreground(orange).
+			Render(" [flagged only] ")
+	}
+
 	help := lipgloss.NewStyle().
 		Foreground(gray700).
-		Render("↑↓ scroll  o browser  f finder  q quit")
+		Render("↑↓ scroll  o browser  f finder  t filter  q quit")
 
-	padW := w - lipgloss.Width(left) - lipgloss.Width(help)
+	padW := w - lipgloss.Width(left) - lipgloss.Width(filterBadge) - lipgloss.Width(help)
 	if padW < 1 {
 		padW = 1
 	}
@@ -189,5 +196,5 @@ func (m model) viewStatus(w int) string {
 	return lipgloss.NewStyle().
 		Background(gray900).
 		Width(w).
-		Render(left + strings.Repeat(" ", padW) + help)
+		Render(left + filterBadge + strings.Repeat(" ", padW) + help)
 }

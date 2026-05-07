@@ -64,6 +64,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				_ = exec.Command("open", target).Start()
 			}
 			return m, nil
+		case "t":
+			m.showOnlyFlagged = !m.showOnlyFlagged
+			m.rebuildTableRows()
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
@@ -83,17 +87,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, bucketTick()
 
 	case DetectionMsg:
+		flag := ""
+		if _, ok := m.flaggedSet[msg.Domain]; ok {
+			flag = "⚑"
+		}
 		row := table.Row{
 			msg.SeenAt.Format("15:04:05"),
 			msg.Kind,
 			msg.Keyword,
+			flag,
 			msg.Domain,
 		}
 		m.rows = append([]table.Row{row}, m.rows...)
 		if len(m.rows) > maxRows {
 			m.rows = m.rows[:maxRows]
 		}
-		m.table.SetRows(m.rows)
+		m.rebuildTableRows()
 		m.detections++
 		m.bucketAcc++
 		m.lastDomain = msg.Domain
@@ -111,6 +120,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Dir != "" {
 			m.captureDirs[msg.Domain] = msg.Dir
 		}
+		m.flaggedSet[msg.Domain] = true
+		// Update the flag badge on any existing rows for this domain.
+		for i, row := range m.rows {
+			if len(row) > 4 && row[4] == msg.Domain {
+				m.rows[i][3] = "⚑"
+			}
+		}
+		m.rebuildTableRows()
 		return m, waitForRule(m.ruleCh)
 
 	case LogMsg:
@@ -123,6 +140,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
+}
+
+func (m *model) rebuildTableRows() {
+	if m.showOnlyFlagged {
+		var filtered []table.Row
+		for _, r := range m.rows {
+			if len(r) > 3 && r[3] == "⚑" {
+				filtered = append(filtered, r)
+			}
+		}
+		m.table.SetRows(filtered)
+	} else {
+		m.table.SetRows(m.rows)
+	}
 }
 
 func (m *model) resize() {
@@ -141,8 +172,8 @@ func (m *model) resize() {
 	m.table.SetHeight(tableH)
 
 	// Dynamic column widths.
-	const timeW, kindW, kwW = 10, 8, 14
-	fixedW := timeW + kindW + kwW + 4*2
+	const timeW, kindW, kwW, flagW = 10, 8, 14, 4
+	fixedW := timeW + kindW + kwW + flagW + 5*2
 	domainW := m.width - fixedW - 2
 	if domainW < 20 {
 		domainW = 20
@@ -151,6 +182,7 @@ func (m *model) resize() {
 		{Title: "TIME", Width: timeW},
 		{Title: "KIND", Width: kindW},
 		{Title: "KEYWORD", Width: kwW},
+		{Title: "FLAG", Width: flagW},
 		{Title: "DOMAIN", Width: domainW},
 	})
 }
